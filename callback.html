@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeScope — Login Callback</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Barlow:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090d;--s1:#0d1017;--border:#1c2133;--border2:#242a3a;--green:#0dff8c;--red:#ff3b5c;--text:#dde2ef;--muted:#4a5168;--muted2:#6b7591;--white:#f0f4ff;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(13,255,140,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(13,255,140,0.025) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:36px 28px;max-width:460px;width:100%;text-align:center;position:relative;z-index:1;animation:up 0.4s ease;}
+@keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.brand{font-size:22px;font-weight:900;letter-spacing:-1px;color:var(--white);margin-bottom:28px;}
+.brand em{color:var(--green);font-style:normal;}
+.icon{font-size:44px;margin-bottom:16px;display:block;}
+.title{font-size:20px;font-weight:900;color:var(--white);margin-bottom:8px;}
+.sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted2);line-height:1.7;margin-bottom:20px;}
+.code-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;text-align:left;}
+.code-box{background:var(--bg);border:1px solid rgba(13,255,140,0.3);border-radius:10px;padding:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green);word-break:break-all;text-align:left;margin-bottom:14px;line-height:1.6;user-select:all;-webkit-user-select:all;}
+.btn{width:100%;border:none;border-radius:10px;padding:14px;font-family:'Barlow',sans-serif;font-size:14px;font-weight:800;letter-spacing:1px;cursor:pointer;transition:all 0.2s;margin-bottom:10px;display:block;text-decoration:none;text-align:center;}
+.btn-green{background:var(--green);color:#000;}
+.btn-green:hover{background:#3dffaa;}
+.btn-green.done{background:#1a3a2a;color:var(--green);border:1px solid rgba(13,255,140,0.3);}
+.btn-outline{background:transparent;color:var(--green);border:1px solid rgba(13,255,140,0.3);}
+.btn-outline:hover{background:rgba(13,255,140,0.07);}
+.err{background:rgba(255,59,92,0.07);border:1px solid rgba(255,59,92,0.2);border-radius:10px;padding:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);text-align:left;line-height:1.6;}
+.spin{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.notice{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:12px;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">Trade<em>Scope</em></div>
+  <div id="content"><div class="spin"></div><div class="title">Processing...</div></div>
+</div>
+<script>
+const params = new URLSearchParams(window.location.search);
+const code   = params.get('code');
+const error  = params.get('error');
+const cont   = document.getElementById('content');
+
+if (error) {
+  cont.innerHTML = `
+    <span class="icon">❌</span>
+    <div class="title">Login Failed</div>
+    <div class="err">Error: ${error}<br>${params.get('error_description')||'Unknown error'}</div>
+    <a class="btn btn-outline" href="./index.html" style="margin-top:14px;">← Back</a>`;
+} else if (code) {
+  try { localStorage.setItem('upstox_auth_code', code); } catch(e){}
+  try { sessionStorage.setItem('upstox_auth_code', code); } catch(e){}
+
+  cont.innerHTML = `
+    <span class="icon">✅</span>
+    <div class="title">Login Successful!</div>
+    <div class="sub">Your auth code is saved. Tap <strong style="color:var(--white)">Copy Code</strong>, then open TradeScope and paste it in Step 3.</div>
+    <div class="code-label">Your Auth Code (tap to select all)</div>
+    <div class="code-box" id="codeBox" onclick="selectAll(this)">${code}</div>
+    <button class="btn btn-green" id="copyBtn" onclick="copyIt()">📋 Copy Code</button>
+    <a class="btn btn-outline" href="./index.html">→ Go to TradeScope</a>
+    <div class="notice">Code also saved automatically — TradeScope will auto-fill it.</div>`;
+} else {
+  cont.innerHTML = `
+    <span class="icon">⚠️</span>
+    <div class="title">No Code Found</div>
+    <div class="sub">This page should be opened via Upstox login redirect only.</div>
+    <a class="btn btn-outline" href="./index.html">← Back to TradeScope</a>`;
+}
+
+function selectAll(el) {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+}
+
+function copyIt() {
+  const b = document.getElementById('copyBtn');
+  const copy = () => {
+    b.textContent = '✓ Copied!';
+    b.classList.add('done');
+    setTimeout(() => { b.textContent = '📋 Copy Code'; b.classList.remove('done'); }, 2500);
+  };
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(code).then(copy).catch(() => { selectAll(document.getElementById('codeBox')); });
+  } else {
+    selectAll(document.getElementById('codeBox'));
+    document.execCommand('copy');
+    copy();
+  }
+}
+</script>
+</body>
+</html>
